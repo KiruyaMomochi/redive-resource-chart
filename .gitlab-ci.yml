@@ -1,5 +1,11 @@
 image: "registry.gitlab.com/gitlab-org/gitlab-build-images:alpine-helm"
 
+variables:
+  SAST_DISABLE_DIND: "true"
+
+include:
+  - template: SAST.gitlab-ci.yml
+
 stages:
   - test
   - release
@@ -8,6 +14,13 @@ lint:
   stage: test
   script:
     - helm lint .
+
+kubesec-sast:
+  extends: .analyzer
+  image:
+    name: "registry.gitlab.com/gitlab-org/security-products/analyzers/kubesec:add-kubesec-analyzer"
+  before_script:
+    - helm template -f values.yaml --output-dir manifests .
 
 release-chart:
   stage: release
