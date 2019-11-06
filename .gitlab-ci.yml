@@ -15,6 +15,7 @@ compile_manifests:
   stage: build
   script:
     - mkdir manifests
+    - helm dependency build
     - helm template -f values.yaml --output-dir manifests .
   artifacts:
     paths:
@@ -27,8 +28,7 @@ lint:
 
 kubesec-sast:
   extends: .analyzer
-  dependencies:
-    - compile_manifests
+  needs: ["compile_manifests"]
   image:
     name: "registry.gitlab.com/gitlab-org/security-products/analyzers/kubesec:add-kubesec-analyzer"
 
