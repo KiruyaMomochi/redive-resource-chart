@@ -15,9 +15,9 @@ compile_manifests:
   stage: build
   script:
     - mkdir manifests
-    - helm version
     - helm init --debug --client-only
     - helm dependency build
+    - helm version
     - helm template -f values.yaml --debug --output-dir manifests .
   artifacts:
     paths:
