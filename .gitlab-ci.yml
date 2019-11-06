@@ -14,6 +14,7 @@ stages:
 compile_manifests:
   stage: build
   script:
+    - mkdir manifests
     - helm template -f values.yaml --output-dir manifests .
   artifacts:
     paths:
