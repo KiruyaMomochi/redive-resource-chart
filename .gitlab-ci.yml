@@ -7,8 +7,17 @@ include:
   - template: SAST.gitlab-ci.yml
 
 stages:
+  - build
   - test
   - release
+
+compile_manifests:
+  stage: build
+  script:
+    - helm template -f values.yaml --output-dir manifests .
+  artifacts:
+    paths:
+      - manifests
 
 lint:
   stage: test
@@ -17,10 +26,10 @@ lint:
 
 kubesec-sast:
   extends: .analyzer
+  dependencies:
+    - compile_manifests
   image:
     name: "registry.gitlab.com/gitlab-org/security-products/analyzers/kubesec:add-kubesec-analyzer"
-  before_script:
-    - helm template -f values.yaml --output-dir manifests .
 
 release-chart:
   stage: release
