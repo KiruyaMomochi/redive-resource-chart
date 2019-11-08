@@ -2,7 +2,6 @@ image: "registry.gitlab.com/gitlab-org/gitlab-build-images:alpine-helm"
 
 variables:
   SAST_DISABLE_DIND: "true"
-  SEARCH_MAX_DEPTH: 99
 
 include:
   - template: SAST.gitlab-ci.yml
@@ -16,10 +15,9 @@ compile_manifests:
   stage: build
   script:
     - mkdir manifests
-    - helm init --debug --client-only
+    - helm init --client-only
     - helm dependency build
-    - helm version -c
-    - helm template -f values.yaml --debug --output-dir manifests .
+    - helm template -f values.yaml --output-dir manifests .
   artifacts:
     paths:
       - manifests
