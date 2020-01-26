@@ -12,9 +12,9 @@ metadata:
 {{- if .Values.ingress.annotations }}
 {{ toYaml .Values.ingress.annotations | indent 4 }}
 {{- end }}
-{{- if and .Values.ingress.modSecurity .Values.ingress.modSecurity.enabled }}
+{{- if and .Values.ingress.modSec .Values.ingress.modSec.enabled }}
     nginx.ingress.kubernetes.io/modsecurity-snippet: |
-      SecRuleEngine {{ .Values.ingress.modSecurity.secRuleEngine | default "DetectionOnly" | title }}
+      SecRuleEngine {{ .Values.ingress.modSec.secRuleEngine | default "DetectionOnly" | title }}
 
 {{- end }}
 {{- if .Values.prometheus.metrics }}
