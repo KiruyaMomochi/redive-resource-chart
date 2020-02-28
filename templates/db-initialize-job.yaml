@@ -9,7 +9,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": {{ if .Values.postgresql.enabled }}"post-install"{{ else }}"pre-install"{{ end }}
     "helm.sh/hook-delete-policy": before-hook-creation
     "helm.sh/hook-weight": "0"
 spec:

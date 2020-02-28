@@ -9,6 +9,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/stretchr/testify/require"
 	appsV1 "k8s.io/api/apps/v1"
+	batchV1 "k8s.io/api/batch/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
 	netV1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -484,6 +485,135 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDbInitializeHookTemplate(t *testing.T) {
+	templatePath := "templates/db-initialize-job.yaml"
+	releaseName := "test-db-initialize-hook-template"
+
+	t.Run("job is not created when no command", func(t *testing.T) {
+		options := &helm.Options{
+			SetValues: map[string]string{},
+		}
+		output := helm.RenderTemplate(t, options, helmChartPath, releaseName, []string{templatePath})
+		job := new(batchV1.Job)
+		helm.UnmarshalK8SYaml(t, output, job)
+
+		require.Equal(t, "", job.Kind)
+	})
+
+	t.Run("job is created when command is given", func(t *testing.T) {
+		options := &helm.Options{
+			SetValues: map[string]string{
+				"application.initializeCommand": "test command",
+			},
+		}
+		output := helm.RenderTemplate(t, options, helmChartPath, releaseName, []string{templatePath})
+		job := new(batchV1.Job)
+		helm.UnmarshalK8SYaml(t, output, job)
+
+		require.Equal(t, "Job", job.Kind)
+		require.Equal(t, "test command", job.Spec.Template.Spec.Containers[0].Args[1])
+	})
+
+	t.Run("job is a post-install hook when in-cluster postgres is enabled", func(t *testing.T) {
+		options := &helm.Options{
+			SetValues: map[string]string{
+				"application.initializeCommand": "test command",
+				"postgresql.enabled":            "true",
+			},
+		}
+		output := helm.RenderTemplate(t, options, helmChartPath, releaseName, []string{templatePath})
+		job := new(batchV1.Job)
+		helm.UnmarshalK8SYaml(t, output, job)
+
+		require.Equal(t, "post-install", job.ObjectMeta.Annotations["helm.sh/hook"])
+	})
+
+	t.Run("job is a pre-install hook when in-cluster postgres is disabled", func(t *testing.T) {
+		options := &helm.Options{
+			SetValues: map[string]string{
+				"application.initializeCommand": "test command",
+				"postgresql.enabled":            "false",
+			},
+		}
+		output := helm.RenderTemplate(t, options, helmChartPath, releaseName, []string{templatePath})
+		job := new(batchV1.Job)
+		helm.UnmarshalK8SYaml(t, output, job)
+
+		require.Equal(t, "pre-install", job.ObjectMeta.Annotations["helm.sh/hook"])
+	})
+}
+
+func TestDbMigrateHookTemplate(t *testing.T) {
+	releaseName := "test-db-migrate-hook-template"
+	templatePath := "templates/db-migrate-hook.yaml"
+
+	t.Run("job is not created when no command", func(t *testing.T) {
+		options := &helm.Options{
+			SetValues: map[string]string{},
+		}
+		output := helm.RenderTemplate(t, options, helmChartPath, releaseName, []string{templatePath})
+		job := new(batchV1.Job)
+		helm.UnmarshalK8SYaml(t, output, job)
+
+		require.Equal(t, "", job.Kind)
+	})
+
+	t.Run("job is created when command is given", func(t *testing.T) {
+		options := &helm.Options{
+			SetValues: map[string]string{
+				"application.migrateCommand": "test command",
+			},
+		}
+		output := helm.RenderTemplate(t, options, helmChartPath, releaseName, []string{templatePath})
+		job := new(batchV1.Job)
+		helm.UnmarshalK8SYaml(t, output, job)
+
+		require.Equal(t, "Job", job.Kind)
+		require.Equal(t, "test command", job.Spec.Template.Spec.Containers[0].Args[1])
+	})
+
+	t.Run("job is a post-install hook when release is install with in-cluster postgres enabled", func(t *testing.T) {
+		options := &helm.Options{
+			SetValues: map[string]string{
+				"application.migrateCommand": "test command",
+				"postgresql.enabled":         "true",
+			},
+		}
+		output := helm.RenderTemplate(t, options, helmChartPath, releaseName, []string{templatePath})
+		job := new(batchV1.Job)
+		helm.UnmarshalK8SYaml(t, output, job)
+
+		require.Equal(t, "post-install", job.ObjectMeta.Annotations["helm.sh/hook"])
+	})
+
+	t.Run("job is a pre-install hook when release is install with in-cluster postgres disabled", func(t *testing.T) {
+		options := &helm.Options{
+			SetValues: map[string]string{
+				"application.migrateCommand": "test command",
+				"postgresql.enabled":         "false",
+			},
+		}
+		output := helm.RenderTemplate(t, options, helmChartPath, releaseName, []string{templatePath})
+		job := new(batchV1.Job)
+		helm.UnmarshalK8SYaml(t, output, job)
+
+		require.Equal(t, "pre-install", job.ObjectMeta.Annotations["helm.sh/hook"])
+	})
+
+	t.Run("job is a pre-upgrade hook when release is upgrade", func(t *testing.T) {
+		options := &helm.Options{}
+		// there's no way to set --is-upgrade using RenderTemplate, so we construct the command directly
+		output, err := helm.RunHelmCommandAndGetOutputE(t, options, "template", helmChartPath, "--set", "application.migrateCommand=hello", "--is-upgrade", "--execute", templatePath)
+		if err != nil {
+			t.Errorf("%v", err)
+		}
+		job := new(batchV1.Job)
+		helm.UnmarshalK8SYaml(t, output, job)
+
+		require.Equal(t, "pre-upgrade", job.ObjectMeta.Annotations["helm.sh/hook"])
+	})
 }
 
 func TestNetworkPolicyDeployment(t *testing.T) {

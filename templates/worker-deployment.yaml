@@ -1,4 +1,4 @@
-{{- if and (not .Values.application.initializeCommand) .Values.workers -}}
+{{- if and (not (and .Values.postgresql.enabled .Values.application.initializeCommand)) .Values.workers -}}
 apiVersion: v1
 kind: List
 items:

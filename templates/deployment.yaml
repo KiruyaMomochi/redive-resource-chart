@@ -1,4 +1,4 @@
-{{- if not .Values.application.initializeCommand -}}
+{{- if not (and .Values.postgresql.enabled .Values.application.initializeCommand) -}}
 apiVersion: {{ default "extensions/v1beta1" .Values.deploymentApiVersion }}
 kind: Deployment
 metadata:
