@@ -1,13 +1,36 @@
 image: "registry.gitlab.com/gitlab-org/gitlab-build-images:alpine-helm"
 
+variables:
+  SAST_DISABLE_DIND: "true"
+  SCAN_KUBERNETES_MANIFESTS: "true"
+  SAST_DEFAULT_ANALYZERS: "kubesec,secrets"
+
+include:
+  - template: SAST.gitlab-ci.yml
+
 stages:
+  - build
   - test
   - release
+
+compile_manifests:
+  stage: build
+  script:
+    - mkdir manifests
+    - helm init --client-only
+    - helm dependency build .
+    - helm template -f values.yaml --output-dir manifests .
+  artifacts:
+    paths:
+      - manifests
 
 lint:
   stage: test
   script:
     - helm lint .
+
+kubesec-sast:
+  needs: ["compile_manifests"]
 
 test:
   stage: test
