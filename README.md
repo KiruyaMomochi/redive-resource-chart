@@ -67,3 +67,8 @@
 | prometheus.metrics            | Annotates the service for prometheus auto-discovery. Also denies access to the `/metrics` endpoint from external addresses with Ingress. | `false` |
 | networkPolicy.enabled         | Enable container network policy | `false` |
 | networkPolicy.spec            | [Network policy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) definition | `{ podSelector: { matchLabels: {} }, ingress: [{ from: [{ podSelector: { matchLabels: {} } }, { namespaceSelector: { matchLabels: { app.gitlab.com/managed_by: gitlab } } }] }] }` |
+
+## PostgreSQL
+
+This chart depends on version 0.7.1 of the `stable/postgresql` chart.
+For reference the source code for this specific version can be found at https://github.com/helm/charts/tree/b90ad657e1a226eb52c3eb6a2a95ba3d6d494f58/stable/postgresql
