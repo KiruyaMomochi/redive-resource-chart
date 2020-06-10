@@ -130,6 +130,55 @@ func TestDeploymentTemplate(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
+		CaseName                string
+		Release                 string
+		Values                  map[string]string
+		ExpectedImageRepository string
+	}{
+		{
+			CaseName: "skaffold",
+			Release:  "production",
+			Values: map[string]string{
+				"image.repository": "skaffold",
+				"image.tag":        "",
+			},
+			ExpectedImageRepository: "skaffold",
+		},
+		{
+			CaseName: "skaffold",
+			Release:  "production",
+			Values: map[string]string{
+				"image.repository": "skaffold",
+				"image.tag":        "stable",
+			},
+			ExpectedImageRepository: "skaffold:stable",
+		},
+	} {
+		t.Run(tc.CaseName, func(t *testing.T) {
+			namespaceName := "minimal-ruby-app-" + strings.ToLower(random.UniqueId())
+
+			values := map[string]string{
+				"gitlab.app": "auto-devops-examples/minimal-ruby-app",
+				"gitlab.env": "prod",
+			}
+
+			mergeStringMap(values, tc.Values)
+
+			options := &helm.Options{
+				SetValues:      values,
+				KubectlOptions: k8s.NewKubectlOptions("", "", namespaceName),
+			}
+
+			output := helm.RenderTemplate(t, options, helmChartPath, tc.Release, []string{"templates/deployment.yaml"})
+
+			var deployment appsV1.Deployment
+			helm.UnmarshalK8SYaml(t, output, &deployment)
+
+			require.Equal(t, tc.ExpectedImageRepository, deployment.Spec.Template.Spec.Containers[0].Image)
+		})
+	}
+
+	for _, tc := range []struct {
 		CaseName string
 		Release  string
 		Values   map[string]string
@@ -180,7 +229,6 @@ func TestDeploymentTemplate(t *testing.T) {
 
 			require.Equal(t, tc.ExpectedName, deployment.Name)
 			require.Equal(t, tc.ExpectedStrategyType, deployment.Spec.Strategy.Type)
-
 			require.Equal(t, map[string]string{
 				"app.gitlab.com/app": "auto-devops-examples/minimal-ruby-app",
 				"app.gitlab.com/env": "prod",
