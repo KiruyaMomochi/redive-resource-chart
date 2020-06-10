@@ -48,7 +48,7 @@ items:
         terminationGracePeriodSeconds: {{ $workerConfig.terminationGracePeriodSeconds }}
         containers:
         - name: {{ $.Chart.Name }}-{{ $workerName }}
-          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"
+          image: {{ template "imagename" $ }}
           command:
           {{- range $workerConfig.command }}
           - {{ . }}
