@@ -710,6 +710,11 @@ func TestIngressTemplate_Disable(t *testing.T) {
 			expectedrelease: releaseName + "-auto-deploy",
 		},
 		{
+			name:            "with ingress.enabled key undefined, but service is enabled",
+			values:          map[string]string{"ingress.enabled": "null", "service.enabled": "true"},
+			expectedrelease: releaseName + "-auto-deploy",
+		},
+		{
 			name:            "with service enabled and track non-stable",
 			values:          map[string]string{"service.enabled": "true", "application.track": "non-stable"},
 			expectedrelease: "",
@@ -722,6 +727,26 @@ func TestIngressTemplate_Disable(t *testing.T) {
 		{
 			name:            "with service disabled and track non-stable",
 			values:          map[string]string{"service.enabled": "false", "application.track": "non-stable"},
+			expectedrelease: "",
+		},
+		{
+			name:            "with ingress disabled",
+			values:          map[string]string{"ingress.enabled": "false"},
+			expectedrelease: "",
+		},
+		{
+			name:            "with ingress enabled and track non-stable",
+			values:          map[string]string{"ingress.enabled": "true", "application.track": "non-stable"},
+			expectedrelease: "",
+		},
+		{
+			name:            "with ingress enabled and service disabled",
+			values:          map[string]string{"ingress.enabled": "true", "service.enabled": "false"},
+			expectedrelease: "",
+		},
+		{
+			name:            "with ingress disabled and service enabled and track stable",
+			values:          map[string]string{"ingress.enabled": "false", "service.enabled": "true", "application.track": "stable"},
 			expectedrelease: "",
 		},
 	}

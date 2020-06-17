@@ -40,6 +40,7 @@
 | service.commonName            | If present, this will define the ssl certificate common name to be used by CertManager. `service.url` and `service.additionalHosts` will be added as Subject Alternative Names (SANs) | `nil` |
 | service.externalPort          |             | `5000`                             |
 | service.internalPort          |             | `5000`                             |
+| ingress.enabled               | If true, enables ingress | `true`                |
 | ingress.tls.enabled           | If true, enables SSL | `true`                    |
 | ingress.tls.secretName        | Name of the secret used to terminate SSL traffic | `""` |
 | ingress.modSecurity.enabled | Enable custom configuration for modsecurity, defaulting to [the Core Rule Set](https://coreruleset.org) | `false` |
