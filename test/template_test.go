@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	chartName     = "auto-deploy-app-0.7.0"
+	chartName     = "auto-deploy-app-0.8.0"
 	helmChartPath = ".."
 )
 
