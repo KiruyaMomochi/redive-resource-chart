@@ -1,5 +1,14 @@
 # GitLab's Auto-deploy Helm Chart
 
+## Deprecation Notice
+
+GitLab is moving all development for `auto-deploy-app` into [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image). 
+Going forward, the `auto-deploy-app` Helm chart will be bundled with `auto-deploy-image`
+and will no longer released as a stand-alone Helm chart. Existing releases of `auto-deploy-app`
+will remain in [GitLab's chart registry](http://charts.gitlab.io/).
+
+If you have any questions, please ask in <https://gitlab.com/gitlab-org/charts/auto-deploy-app/-/issues/70>.
+
 ## Requirements
 
 - Helm `2.9.0` and above is required in order support `"helm.sh/hook-delete-policy": before-hook-creation` for migrations
