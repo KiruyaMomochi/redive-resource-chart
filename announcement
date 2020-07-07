@@ -1,0 +1,80 @@
+#!/usr/bin/env ruby
+
+require 'gitlab'
+
+PROJECT_ID = ENV['PROJECT_ID']
+DRY_RUN = ENV['DRY_RUN']
+ANNOUNCEMENT_VERSION_KEY = 'announcement-version'
+ANNOUNCEMENT_VERSION_PREFIX = 'auto-deploy-app-migration'
+ANNOUNCEMENT_VERSION = ENV['ANNOUNCEMENT_VERSION'] || '1'
+
+MESSAGE_FOR_ISSUES = <<~EOS
+Hey! 👋
+
+GitLab is moving all development for `auto-deploy-app` into [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image). 
+Going forward, the `auto-deploy-app` Helm chart will be bundled with `auto-deploy-image`
+and will no longer released as a stand-alone Helm chart. Existing releases of `auto-deploy-app`
+will remain in [GitLab's chart registry](http://charts.gitlab.io/).
+
+As part of this migration, issues will be moved to the [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image) project.
+
+If you have any questions, please ask in <https://gitlab.com/gitlab-org/charts/auto-deploy-app/-/issues/70>.
+
+#{ANNOUNCEMENT_VERSION_KEY}:#{ANNOUNCEMENT_VERSION_PREFIX}:#{ANNOUNCEMENT_VERSION}
+EOS
+
+MESSAGE_FOR_MRS = <<~EOS
+Hey! 👋
+
+GitLab is moving all development for `auto-deploy-app` into [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image). 
+Going forward, the `auto-deploy-app` Helm chart will be bundled with `auto-deploy-image`
+and will no longer released as a stand-alone Helm chart. Existing releases of `auto-deploy-app`
+will remain in [GitLab's chart registry](http://charts.gitlab.io/).
+
+As part of this migration, merge requests will be closed. Please open a new one in the [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image) project.
+
+If you have any questions, please ask in <https://gitlab.com/gitlab-org/charts/auto-deploy-app/-/issues/70>.
+
+#{ANNOUNCEMENT_VERSION_KEY}:#{ANNOUNCEMENT_VERSION_PREFIX}:#{ANNOUNCEMENT_VERSION}
+EOS
+
+Gitlab.configure do |config|
+  config.endpoint       = 'https://gitlab.com/api/v4'
+  config.private_token  = ENV['GITLAB_PAT']
+end
+
+Gitlab.issues(PROJECT_ID, state: :opened).auto_paginate.map do |issue|
+  puts "Checking if announced in the issue #{issue.web_url}"
+
+  unless DRY_RUN
+    announced = Gitlab.issue_notes(PROJECT_ID, issue.iid).auto_paginate.any? do |note|
+      version = note.body.scan(/#{ANNOUNCEMENT_VERSION_KEY}:#{ANNOUNCEMENT_VERSION_PREFIX}:(\d+)/)&.last&.first
+      version == ANNOUNCEMENT_VERSION
+    end
+
+    next if announced
+
+    print "Writing a comment into the issue #{issue.iid}..."
+
+    Gitlab.create_issue_note(PROJECT_ID, issue.iid, MESSAGE_FOR_ISSUES)
+    puts "Done"
+  end
+end
+
+Gitlab.merge_requests(PROJECT_ID, state: :opened).auto_paginate.map do |mr|
+  puts "Checking if announced in the issue #{mr.web_url}"
+
+  unless DRY_RUN
+    announced = Gitlab.merge_request_notes(PROJECT_ID, mr.iid).auto_paginate.any? do |note|
+      version = note.body.scan(/#{ANNOUNCEMENT_VERSION_KEY}:#{ANNOUNCEMENT_VERSION_PREFIX}:(\d+)/)&.last&.first
+      version == ANNOUNCEMENT_VERSION
+    end
+
+    next if announced
+
+    print "Writing a comment into the merge request #{mr.iid}..."
+  
+    Gitlab.create_merge_request_note(PROJECT_ID, mr.iid, MESSAGE_FOR_MRS)
+    puts "Done"
+  end
+end
