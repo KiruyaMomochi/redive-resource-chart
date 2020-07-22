@@ -1,0 +1,67 @@
+#!/usr/bin/env ruby
+
+require 'gitlab'
+
+SOURCE_PROJECT_ID = ENV['SOURCE_PROJECT_ID']
+TARGET_PROJECT_ID = ENV['TARGET_PROJECT_ID']
+DRY_RUN = ENV['DRY_RUN']
+
+MESSAGE_FOR_ISSUES = <<~EOS
+Hey! 👋
+
+We've finally released [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image)
+v1.0.0 that bundles `auto-deploy-app` Helm chart by default. This project still remains
+only for patch releases for v0 charts, however, all feature implementaion
+and breaking changes must be merged into the bundled chart in [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image).
+
+As we got a new home to continue chart development,
+this issue is moved to the [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image) project shortly.
+
+If you have any questions, please ask in <https://gitlab.com/gitlab-org/charts/auto-deploy-app/-/issues/70>.
+EOS
+
+MESSAGE_FOR_MRS = <<~EOS
+Hey! 👋
+
+We've finally released [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image)
+v1.0.0 that bundles `auto-deploy-app` Helm chart by default. This project remains
+only for shpping patch release for v0 charts, whereas all feature implementaion
+and breaking changes must be merged into the bundled chart in [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image).
+
+As we got a new home to continue chart development,
+this merge request is closed shortly. Please open a new one in [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image)
+project.
+
+If you have any questions, please ask in <https://gitlab.com/gitlab-org/charts/auto-deploy-app/-/issues/70>.
+EOS
+
+Gitlab.configure do |config|
+  config.endpoint       = 'https://gitlab.com/api/v4'
+  config.private_token  = ENV['GITLAB_PAT']
+end
+
+Gitlab.issues(SOURCE_PROJECT_ID, state: :opened).auto_paginate.map do |issue|
+  print "Moving the issue #{issue.web_url} to the target project #{TARGET_PROJECT_ID}..."
+
+  unless DRY_RUN
+    Gitlab.create_issue_note(SOURCE_PROJECT_ID, issue.iid, MESSAGE_FOR_ISSUES)
+    Gitlab.move_issue(SOURCE_PROJECT_ID, issue.iid, to_project_id: TARGET_PROJECT_ID)
+
+    puts "Done"
+  else
+    puts "Skip"
+  end
+end
+
+Gitlab.merge_requests(SOURCE_PROJECT_ID, state: :opened).auto_paginate.map do |mr|
+  print "Closing the merge request #{mr.web_url} ..."
+
+  unless DRY_RUN
+    Gitlab.create_merge_request_note(SOURCE_PROJECT_ID, mr.iid, MESSAGE_FOR_MRS)
+    Gitlab.update_merge_request(SOURCE_PROJECT_ID, mr.iid, state_event: 'close')
+
+    puts "Done"
+  else
+    puts "Skip"
+  end
+end

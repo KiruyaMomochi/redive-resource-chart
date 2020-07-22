@@ -9,9 +9,20 @@ include:
   - template: SAST.gitlab-ci.yml
 
 stages:
+  - project_migration
   - build
   - test
   - release
+
+project_migrations:
+  image: ruby:2.6
+  stage: project_migration
+  before_script:
+    - gem install gitlab
+  script:
+    - ./project_migration
+  when: manual
+  allow_failure: false
 
 compile_manifests:
   stage: build
