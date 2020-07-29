@@ -10,12 +10,12 @@ MESSAGE_FOR_ISSUES = <<~EOS
 Hey! 👋
 
 We've finally released [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image)
-v1.0.0 that bundles `auto-deploy-app` Helm chart by default. This project still remains
-only for patch releases for v0 charts, however, all feature implementaion
-and breaking changes must be merged into the bundled chart in [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image).
+v1.0.0 that bundles the `auto-deploy-app` Helm chart by default. This project now exists
+only for patch releases to v0 charts. All feature implementaion and breaking changes
+must be merged into the bundled chart in [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image).
 
-As we got a new home to continue chart development,
-this issue is moved to the [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image) project shortly.
+This issue will be moved to the [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image)
+project.
 
 If you have any questions, please ask in <https://gitlab.com/gitlab-org/charts/auto-deploy-app/-/issues/70>.
 EOS
@@ -24,12 +24,12 @@ MESSAGE_FOR_MRS = <<~EOS
 Hey! 👋
 
 We've finally released [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image)
-v1.0.0 that bundles `auto-deploy-app` Helm chart by default. This project remains
-only for shpping patch release for v0 charts, whereas all feature implementaion
-and breaking changes must be merged into the bundled chart in [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image).
+v1.0.0 that bundles the `auto-deploy-app` Helm chart by default. This project now exists
+only for patch releases to v0 charts. All feature implementaion and breaking changes
+must be merged into the bundled chart in [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image).
 
-As we got a new home to continue chart development,
-this merge request is closed shortly. Please open a new one in [`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image)
+This merge request will be closed, please open a new one in the
+[`auto-deploy-image`](https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image)
 project.
 
 If you have any questions, please ask in <https://gitlab.com/gitlab-org/charts/auto-deploy-app/-/issues/70>.
