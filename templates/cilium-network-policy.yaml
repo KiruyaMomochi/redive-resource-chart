@@ -1,0 +1,13 @@
+{{- if .Values.ciliumNetworkPolicy.enabled -}}
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    app: {{ template "appname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+{{ toYaml .Values.ciliumNetworkPolicy.spec | indent 2 }}
+{{- end -}}

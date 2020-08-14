@@ -4,6 +4,9 @@ import (
 	"strings"
 	"testing"
 
+	cilium_v2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
+	slim_v1 "github.com/cilium/cilium/pkg/k8s/slim/k8s/apis/meta/v1"
+	cilium_api "github.com/cilium/cilium/pkg/policy/api"
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
@@ -43,9 +46,9 @@ func TestDeploymentTemplate(t *testing.T) {
 		},
 		{
 			CaseName:             "long release name",
-			Release:              strings.Repeat("r", 80),
-			ExpectedName:         strings.Repeat("r", 63),
-			ExpectedRelease:      strings.Repeat("r", 80),
+			Release:              strings.Repeat("r", 53),
+			ExpectedName:         strings.Repeat("r", 53),
+			ExpectedRelease:      strings.Repeat("r", 53),
 			ExpectedStrategyType: extensions.DeploymentStrategyType(""),
 		},
 		{
@@ -107,7 +110,7 @@ func TestDeploymentTemplate(t *testing.T) {
 			require.Equal(t, map[string]string{
 				"app":      tc.ExpectedName,
 				"chart":    chartName,
-				"heritage": "Tiller",
+				"heritage": "Helm",
 				"release":  tc.ExpectedRelease,
 				"tier":     "web",
 				"track":    "stable",
@@ -236,7 +239,7 @@ func TestDeploymentTemplate(t *testing.T) {
 			require.Equal(t, map[string]string{
 				"app":      tc.ExpectedName,
 				"chart":    chartName,
-				"heritage": "Tiller",
+				"heritage": "Helm",
 				"release":  tc.ExpectedRelease,
 				"tier":     "web",
 				"track":    "stable",
@@ -296,16 +299,16 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 		},
 		{
 			CaseName: "long release name",
-			Release:  strings.Repeat("r", 80),
+			Release:  strings.Repeat("r", 53),
 			Values: map[string]string{
 				"workers.worker1.command[0]": "echo",
 				"workers.worker1.command[1]": "worker1",
 			},
 			ExpectedName:    strings.Repeat("r", 63),
-			ExpectedRelease: strings.Repeat("r", 80),
+			ExpectedRelease: strings.Repeat("r", 53),
 			ExpectedDeployments: []workerDeploymentTestCase{
 				{
-					ExpectedName:         strings.Repeat("r", 63) + "-worker1",
+					ExpectedName:         strings.Repeat("r", 53) + "-worker1",
 					ExpectedCmd:          []string{"echo", "worker1"},
 					ExpectedStrategyType: extensions.DeploymentStrategyType(""),
 				},
@@ -402,7 +405,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				}, deployment.Annotations)
 				require.Equal(t, map[string]string{
 					"chart":    chartName,
-					"heritage": "Tiller",
+					"heritage": "Helm",
 					"release":  tc.ExpectedRelease,
 					"tier":     "worker",
 					"track":    "stable",
@@ -509,7 +512,7 @@ func TestWorkerDeploymentTemplate(t *testing.T) {
 				}, deployment.Annotations)
 				require.Equal(t, map[string]string{
 					"chart":    chartName,
-					"heritage": "Tiller",
+					"heritage": "Helm",
 					"release":  tc.ExpectedRelease,
 					"tier":     "worker",
 					"track":    "stable",
@@ -542,7 +545,7 @@ func TestNetworkPolicyDeployment(t *testing.T) {
 		"app":      releaseName,
 		"chart":    chartName,
 		"release":  releaseName,
-		"heritage": "Tiller",
+		"heritage": "Helm",
 	}
 
 	tcs := []struct {
@@ -556,9 +559,6 @@ func TestNetworkPolicyDeployment(t *testing.T) {
 		ingress     []netV1.NetworkPolicyIngressRule
 		egress      []netV1.NetworkPolicyEgressRule
 	}{
-		{
-			name: "defaults",
-		},
 		{
 			name:        "with default policy",
 			values:      map[string]string{"networkPolicy.enabled": "true"},
@@ -637,6 +637,7 @@ func TestNetworkPolicyDeployment(t *testing.T) {
 }
 
 func TestIngressTemplate_ModSecurity(t *testing.T) {
+	releaseName := "ingress-modsecurity-customrules"
 	templates := []string{"templates/ingress.yaml"}
 	modSecuritySnippet := "SecRuleEngine DetectionOnly\n"
 	modSecuritySnippetWithSecRules := modSecuritySnippet + `SecRule REQUEST_HEADERS:User-Agent \"scanner\" \"log,deny,id:107,status:403,msg:\'Scanner Identified\'\"
@@ -686,7 +687,7 @@ SecRule REQUEST_HEADERS:Content-Type \"text/plain\" \"log,deny,id:\'20010\',stat
 				ValuesFiles: tc.valueFiles,
 				SetValues:   tc.values,
 			}
-			output := helm.RenderTemplate(t, opts, helmChartPath, "", templates)
+			output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates)
 
 			ingress := new(extensions.Ingress)
 			helm.UnmarshalK8SYaml(t, output, ingress)
@@ -708,21 +709,6 @@ func TestIngressTemplate_Disable(t *testing.T) {
 		{
 			name:            "defaults",
 			expectedrelease: releaseName + "-auto-deploy",
-		},
-		{
-			name:            "with service enabled and track non-stable",
-			values:          map[string]string{"service.enabled": "true", "application.track": "non-stable"},
-			expectedrelease: "",
-		},
-		{
-			name:            "with service disabled and track stable",
-			values:          map[string]string{"service.enabled": "false", "application.track": "stable"},
-			expectedrelease: "",
-		},
-		{
-			name:            "with service disabled and track non-stable",
-			values:          map[string]string{"service.enabled": "false", "application.track": "non-stable"},
-			expectedrelease: "",
 		},
 	}
 
@@ -754,21 +740,6 @@ func TestServiceTemplate_Disable(t *testing.T) {
 			name:            "defaults",
 			expectedrelease: releaseName + "-auto-deploy",
 		},
-		{
-			name:            "with service enabled and track non-stable",
-			values:          map[string]string{"service.enabled": "true", "application.track": "non-stable"},
-			expectedrelease: "",
-		},
-		{
-			name:            "with service disabled and track stable",
-			values:          map[string]string{"service.enabled": "false", "application.track": "stable"},
-			expectedrelease: "",
-		},
-		{
-			name:            "with service disabled and track non-stable",
-			values:          map[string]string{"service.enabled": "false", "application.track": "non-stable"},
-			expectedrelease: "",
-		},
 	}
 
 	for _, tc := range tcs {
@@ -783,6 +754,62 @@ func TestServiceTemplate_Disable(t *testing.T) {
 			helm.UnmarshalK8SYaml(t, output, service)
 
 			require.Equal(t, tc.expectedrelease, service.ObjectMeta.Name)
+		})
+	}
+}
+
+func TestCiliumNetworkPolicyDeployment(t *testing.T) {
+	releaseName := "cilium-network-policy-test"
+	templates := []string{"templates/cilium-network-policy.yaml"}
+	expectedLabels := map[string]string{
+		"app":      releaseName,
+		"chart":    chartName,
+		"release":  releaseName,
+		"heritage": "Helm",
+	}
+
+	tcs := []struct {
+		name   string
+		values map[string]string
+
+		meta             metav1.ObjectMeta
+		endpointSelector cilium_api.EndpointSelector
+		ingress          []cilium_api.IngressRule
+		egress           []cilium_api.EgressRule
+	}{
+		{
+			name:             "with default policy",
+			meta:             metav1.ObjectMeta{Name: releaseName + "-auto-deploy", Labels: expectedLabels},
+			values:           map[string]string{"ciliumNetworkPolicy.enabled": "true"},
+			endpointSelector: cilium_api.EndpointSelector{LabelSelector: &slim_v1.LabelSelector{MatchLabels: map[string]string{}}},
+			ingress: []cilium_api.IngressRule{
+				{
+					FromEndpoints: []cilium_api.EndpointSelector{
+						{LabelSelector: &slim_v1.LabelSelector{
+							MatchLabels: map[string]string{
+								"any.app.gitlab.com/managed_by": "gitlab",
+							},
+						}},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := &helm.Options{
+				SetValues: tc.values,
+			}
+			output := helm.RenderTemplate(t, opts, helmChartPath, releaseName, templates)
+
+			policy := new(cilium_v2.CiliumNetworkPolicy)
+			helm.UnmarshalK8SYaml(t, output, policy)
+
+			require.Equal(t, tc.meta, policy.ObjectMeta)
+			require.Equal(t, tc.endpointSelector.LabelSelector, policy.Spec.EndpointSelector.LabelSelector)
+			require.Equal(t, tc.ingress[0].FromEndpoints[0].LabelSelector, policy.Spec.Ingress[0].FromEndpoints[0].LabelSelector)
+			require.Equal(t, tc.egress, policy.Spec.Egress)
 		})
 	}
 }

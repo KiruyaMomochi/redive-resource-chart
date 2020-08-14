@@ -106,6 +106,19 @@ networkPolicy:
           matchLabels:
             app.gitlab.com/managed_by: gitlab
 
+## Configure CiliumNetworkPolicy
+## ref: https://docs.cilium.io/en/stable/concepts/kubernetes/policy/#ciliumnetworkpolicy
+#
+ciliumNetworkPolicy:
+  enabled: false
+  spec:
+    endpointSelector:
+      matchLabels: {}
+    ingress:
+    - fromEndpoints:
+      - matchLabels:
+          app.gitlab.com/managed_by: gitlab
+
 workers: {}
   # worker:
   #   replicaCount: 1
