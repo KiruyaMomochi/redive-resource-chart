@@ -18,6 +18,7 @@ compile_manifests:
   script:
     - mkdir manifests
     - helm init --client-only
+    - helm repo add stable-archive https://gitlab-org.gitlab.io/cluster-integration/helm-stable-archive
     - helm dependency build .
     - helm template -f values.yaml --output-dir manifests .
   artifacts:
@@ -37,6 +38,7 @@ test:
   script:
     - apk add --no-cache build-base go
     - helm init --client-only
+    - helm repo add stable-archive https://gitlab-org.gitlab.io/cluster-integration/helm-stable-archive
     - helm dependency build .
     - cd test && GO111MODULE=auto go test .
 
